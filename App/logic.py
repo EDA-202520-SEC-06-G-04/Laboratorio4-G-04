@@ -316,11 +316,28 @@ def compare_tag_names(name, tag):
 
 def set_book_sublist(catalog, size):
     """
-    Crea una sublista de libros de tamaño size
+    Crea una sublista de libros a partir del porcentaje indicado (size en [0,1]).
+    Guarda la sublista en catalog["book_sublist"].
     """
-    algo = lt.sub_list(catalog["books"], 0, size)
-    catalog["book_sublist"] = algo
-    return catalog
+    total_books = lt.size(catalog["books"])
+
+    # si no hay libros, no intentes hacer sublistas
+    if total_books == 0:
+        catalog["book_sublist"] = lt.new_list()
+        return
+
+    # convertir el porcentaje a cantidad de libros
+    sublist_size = int(total_books * float(size))
+
+    # asegurar que el tamaño esté dentro de [1, total_books]
+    if sublist_size < 1:
+        sublist_size = 1
+    elif sublist_size > total_books:
+        sublist_size = total_books
+
+    sublist = lt.sub_list(catalog["books"], 1, sublist_size)
+    catalog["book_sublist"] = sublist
+
 
 
 def get_time():
@@ -340,31 +357,32 @@ def delta_time(start, end):
 
 def measure_queue_performance(catalog):
     """
-    Mide el desempeño de las operaciones de la cola
+    Mide el tiempo de ejecución de operaciones básicas de cola:
+    enqueue, peek y dequeue.
     """
+    import time
+    from DataStructures.Queue import queue as q
 
     queue = q.new_queue()
+    sublist = catalog["book_sublist"]
 
-    # Medir enqueue
-    start_time = get_time()
-    for pos in range(lt.size(catalog["book_sublist"])):
-        book = lt.get_element(catalog["book_sublist"], pos)
+    start = time.time()
+    for pos in range(1, lt.size(sublist) + 1):
+        book = lt.getElement(sublist, pos)
         q.enqueue(queue, book)
-    end_time = get_time()
-    enqueue_time = delta_time(start_time, end_time)
+    enqueue_time = (time.time() - start) * 1000  # en ms
 
-    # Medir peek
-    start_time = get_time()
-    next = q.peek(queue)
-    end_time = get_time()
-    peek_time = delta_time(start_time, end_time)
+    start = time.time()
+    if not q.is_empty(queue):
+       first = q.peek(queue)
+    else:
+       first = None
+    peek_time = (time.time() - start) * 1000
 
-    # Medir dequeue
-    start_time = get_time()
+    start = time.time()
     while not q.is_empty(queue):
         q.dequeue(queue)
-    end_time = get_time()
-    dequeue_time = delta_time(start_time, end_time)
+    dequeue_time = (time.time() - start) * 1000
 
     return {
         "enqueue_time": enqueue_time,
@@ -372,39 +390,40 @@ def measure_queue_performance(catalog):
         "dequeue_time": dequeue_time
     }
 
-
 def measure_stack_performance(catalog):
     """
-    Mide el desempeño de las operaciones de la pila
+    Mide el tiempo de ejecución de operaciones básicas de pila:
+    push, pop y top.
     """
+    import time
+    from DataStructures.Stack import stack as st
 
     stack = st.new_stack()
+    sublist = catalog["book_sublist"]
 
-    # Medir push
-    start_time = get_time()
-    st.push(stack, {"book_id": "test", "title": "Libro de prueba"})
-    end_time = get_time()
-    push_time = delta_time(start_time, end_time)
-    # TODO Implementar la medición de tiempo para la operación push
-    
-    # Medir top
-    start_time = get_time()
-    st.top(stack)
-    end_time = get_time()
-    top_time = delta_time(start_time, end_time)
+    # medir push
+    start = time.time()
+    for pos in range(1, lt.size(sublist) + 1):
+        book = lt.getElement(sublist, pos)
+        st.push(stack, book)
+    push_time = (time.time() - start) * 1000
 
-    # TODO Implementar la medición de tiempo para la operación top
-    
-    # Medir pop
-    start_time = get_time()
-    st.pop(stack)
-    end_time = get_time()
-    pop_time = delta_time(start_time, end_time)
+    # medir top
+    start = time.time()
+    if not st.is_empty(stack):
+       top_book = st.top(stack)
+    else:
+       top_book = None 
+    top_time = (time.time() - start) * 1000
 
-    # TODO Implementar la medición de tiempo para la operación pop
-    
+    # medir pop
+    start = time.time()
+    while not st.is_empty(stack):
+        st.pop(stack)
+    pop_time = (time.time() - start) * 1000
+
     return {
         "push_time": push_time,
-        "top_time": top_time,
-        "pop_time": pop_time
+        "pop_time": pop_time,
+        "top_time": top_time
     }

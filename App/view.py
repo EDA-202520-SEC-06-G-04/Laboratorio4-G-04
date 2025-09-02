@@ -137,7 +137,7 @@ def main():
 
         elif int(inputs[0]) == 4:
             size = input("Indique tamaño de la muestra: ")
-            size = int(size)
+            size = float(size)
             logic.set_book_sublist(control, size)
 
             print("Ejecutando pruebas de rendimiento...")

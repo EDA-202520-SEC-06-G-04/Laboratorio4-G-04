@@ -1,4 +1,4 @@
-from DataStructures.List import single_linked_list as sl
+from DataStructures.List import array_list as sl
 
 def new_queue():
     return sl.new_list()
