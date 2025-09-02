@@ -27,7 +27,11 @@
 import csv
 import os
 import time
-from DataStructures.List import array_list as lt
+from DataStructures.List import single_linked_list as lt
+from DataStructures.Queue import queue as q
+from DataStructures.Stack import stack as st
+
+
 # TODO Importar las librerías correspondientes para el manejo de pilas y colas
 
 data_dir = os.path.dirname(os.path.realpath('__file__')) + '/Data/'
@@ -72,7 +76,7 @@ def load_data(catalog):
     books, authors = load_books(catalog)
     tag_size = load_tags(catalog)
     book_tag_size = load_books_tags(catalog)
-    # TODO Cargar los datos de libros para leer
+    books_to_read = load_books_to_read(catalog)   
     return books, authors, tag_size, book_tag_size, books_to_read
 
 
@@ -116,6 +120,14 @@ def load_books_to_read(catalog):
     Carga la información del archivo to_read y los agrega a la lista de libros por leer
     """
     # TODO Implementar la carga de los libros por leer del archivo to_read
+    if catalog['books_to_read'] is None:
+        catalog['books_to_read'] = lt.new_list()
+
+    with open("Data/to_read.csv", encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            lt.add_last(catalog['books_to_read'], row)
+
     return books_to_read_size(catalog)
 
 # Funciones de consulta sobre el catálogo
@@ -127,7 +139,10 @@ def get_books_stack_by_user(catalog, user_id):
     """
     books_stack = st.new_stack()
 
-    # TODO Completar la función que retorna los libros por leer de un usuario. Se debe usar el TAD Pila para resolver el requerimiento
+    
+    for book in lt.iterator(catalog['books_to_read']):
+        if book['user_id'] == user_id:     
+            st.push(books_stack, book)     #
 
     return books_stack
 
@@ -137,8 +152,21 @@ def get_user_position_on_queue(catalog, user_id, book_id):
     Retorna la posición de un usuario en la cola para leer un libro.
     """
     queue = q.new_queue()
+    position = -1   
 
-    # TODO Completar la función que retorna la posición de un usuario en la cola para leer un libro. Se debe usar el TAD Cola para resolver el requerimiento.
+    
+    for record in lt.iterator(catalog['books_to_read']):
+        if record['book_id'] == book_id:
+            q.enqueue(queue, record['user_id'])
+
+    
+    current_pos = 1
+    while not q.is_empty(queue):
+        current_user = q.dequeue(queue)
+        if current_user == user_id:
+            position = current_pos
+            break
+        current_pos += 1
 
     return position
 
@@ -261,7 +289,11 @@ def book_tag_size(catalog):
 
 def books_to_read_size(catalog):
     # TODO Implementar la función que retorna el tamaño de la lista de libros por leer
-    pass
+    def books_to_read_size(catalog):
+    
+        if catalog["books_to_read"] is None:
+            return 0
+        return lt.size(catalog["books_to_read"])
 
 # Funciones utilizadas para comparar elementos dentro de una lista
 
@@ -284,11 +316,28 @@ def compare_tag_names(name, tag):
 
 def set_book_sublist(catalog, size):
     """
-    Crea una sublista de libros de tamaño size
+    Crea una sublista de libros a partir del porcentaje indicado (size en [0,1]).
+    Guarda la sublista en catalog["book_sublist"].
     """
-    algo = lt.sub_list(catalog["books"], 0, size)
-    catalog["book_sublist"] = algo
-    return catalog
+    total_books = lt.size(catalog["books"])
+
+    # si no hay libros, no intentes hacer sublistas
+    if total_books == 0:
+        catalog["book_sublist"] = lt.new_list()
+        return
+
+    # convertir el porcentaje a cantidad de libros
+    sublist_size = int(total_books * float(size))
+
+    # asegurar que el tamaño esté dentro de [1, total_books]
+    if sublist_size < 1:
+        sublist_size = 1
+    elif sublist_size > total_books:
+        sublist_size = total_books
+
+    sublist = lt.sub_list(catalog["books"], 1, sublist_size)
+    catalog["book_sublist"] = sublist
+
 
 
 def get_time():
@@ -308,31 +357,32 @@ def delta_time(start, end):
 
 def measure_queue_performance(catalog):
     """
-    Mide el desempeño de las operaciones de la cola
+    Mide el tiempo de ejecución de operaciones básicas de cola:
+    enqueue, peek y dequeue.
     """
+    import time
+    from DataStructures.Queue import queue as q
 
     queue = q.new_queue()
+    sublist = catalog["book_sublist"]
 
-    # Medir enqueue
-    start_time = get_time()
-    for pos in range(lt.size(catalog["book_sublist"])):
-        book = lt.get_element(catalog["book_sublist"], pos)
+    start = time.time()
+    for pos in range(1, lt.size(sublist) + 1):
+        book = lt.getElement(sublist, pos)
         q.enqueue(queue, book)
-    end_time = get_time()
-    enqueue_time = delta_time(start_time, end_time)
+    enqueue_time = (time.time() - start) * 1000  # en ms
 
-    # Medir peek
-    start_time = get_time()
-    next = q.peek(queue)
-    end_time = get_time()
-    peek_time = delta_time(start_time, end_time)
+    start = time.time()
+    if not q.is_empty(queue):
+       first = q.peek(queue)
+    else:
+       first = None
+    peek_time = (time.time() - start) * 1000
 
-    # Medir dequeue
-    start_time = get_time()
+    start = time.time()
     while not q.is_empty(queue):
         q.dequeue(queue)
-    end_time = get_time()
-    dequeue_time = delta_time(start_time, end_time)
+    dequeue_time = (time.time() - start) * 1000
 
     return {
         "enqueue_time": enqueue_time,
@@ -340,29 +390,40 @@ def measure_queue_performance(catalog):
         "dequeue_time": dequeue_time
     }
 
-
 def measure_stack_performance(catalog):
     """
-    Mide el desempeño de las operaciones de la pila
+    Mide el tiempo de ejecución de operaciones básicas de pila:
+    push, pop y top.
     """
+    import time
+    from DataStructures.Stack import stack as st
 
     stack = st.new_stack()
+    sublist = catalog["book_sublist"]
 
-    # Medir push
-    start_time = get_time()
-    # TODO Implementar la medición de tiempo para la operación push
+    # medir push
+    start = time.time()
+    for pos in range(1, lt.size(sublist) + 1):
+        book = lt.getElement(sublist, pos)
+        st.push(stack, book)
+    push_time = (time.time() - start) * 1000
 
-    # Medir top
-    start_time = get_time()
-    # TODO Implementar la medición de tiempo para la operación top
-    end_time = get_time()
-    top_time = delta_time(start_time, end_time)
+    # medir top
+    start = time.time()
+    if not st.is_empty(stack):
+       top_book = st.top(stack)
+    else:
+       top_book = None 
+    top_time = (time.time() - start) * 1000
 
-    # Medir dequeue
-    # TODO Implementar la medición de tiempo para la operación pop
+    # medir pop
+    start = time.time()
+    while not st.is_empty(stack):
+        st.pop(stack)
+    pop_time = (time.time() - start) * 1000
 
     return {
         "push_time": push_time,
-        "top_time": top_time,
-        "pop_time": pop_time
+        "pop_time": pop_time,
+        "top_time": top_time
     }
