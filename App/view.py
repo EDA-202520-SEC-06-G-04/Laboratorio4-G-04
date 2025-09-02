@@ -87,10 +87,10 @@ def print_tests_results(queue_results, stack_results):
     print("El tiempo de ejecución para push:",
           f"{stack_results['push_time']:.3f}", "[ms]")
     
-    print("El tiempo de ejecución para push:",
+    print("El tiempo de ejecución para pop:",
           f"{stack_results['pop_time']:.3f}", "[ms]")
     
-    print("El tiempo de ejecución para push:",
+    print("El tiempo de ejecución para top:",
           f"{stack_results['top_time']:.3f}", "[ms]")
     
     # TODO Imprimir los resultados de las pruebas de rendimiento de la pila
