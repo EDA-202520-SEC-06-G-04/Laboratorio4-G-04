@@ -321,15 +321,15 @@ def set_book_sublist(catalog, size):
     """
     total_books = lt.size(catalog["books"])
 
-    # si no hay libros, no intentes hacer sublistas
+    
     if total_books == 0:
         catalog["book_sublist"] = lt.new_list()
         return
 
-    # convertir el porcentaje a cantidad de libros
+    
     sublist_size = int(total_books * float(size))
 
-    # asegurar que el tamaño esté dentro de [1, total_books]
+
     if sublist_size < 1:
         sublist_size = 1
     elif sublist_size > total_books:
